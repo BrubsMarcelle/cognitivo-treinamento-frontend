@@ -1,0 +1,104 @@
+<div class="perfil-container">
+    <div class="header">
+        <div class="back-section">
+            <button class="back-btn" (click)="goBack()">← Voltar</button>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn" (click)="navigateToRanking()">Ranking</button>
+            <button class="nav-btn logout" (click)="logout()">Sair</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="avatar">
+                    <span>{{ user.name.charAt(0).toUpperCase() }}</span>
+                </div>
+                <div class="profile-title">
+                    <h1>Meu Perfil</h1>
+                    <p>{{ user.email }}</p>
+                </div>
+                <button class="edit-btn" (click)="toggleEdit()">
+                    <span *ngIf="!isEditing">✏️ Editar</span>
+                    <span *ngIf="isEditing">❌ Cancelar</span>
+                </button>
+            </div>
+
+            <div class="profile-content">
+                <div class="form-section" *ngIf="!isEditing">
+                    <div class="info-group">
+                        <label>Nome Completo</label>
+                        <p>{{ user.name }}</p>
+                    </div>
+                    <div class="info-group">
+                        <label>Departamento</label>
+                        <p>{{ user.department }}</p>
+                    </div>
+                    <div class="info-group">
+                        <label>Cargo</label>
+                        <p>{{ user.position }}</p>
+                    </div>
+                    <div class="info-group">
+                        <label>Data de Início</label>
+                        <p>{{ user.startDate | date:'dd/MM/yyyy' }}</p>
+                    </div>
+                </div>
+
+                <div class="form-section" *ngIf="isEditing">
+                    <div class="form-group">
+                        <label for="name">Nome Completo</label>
+                        <input type="text" id="name" [(ngModel)]="user.name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="department">Departamento</label>
+                        <input type="text" id="department" [(ngModel)]="user.department" />
+                    </div>
+                    <div class="form-group">
+                        <label for="position">Cargo</label>
+                        <input type="text" id="position" [(ngModel)]="user.position" />
+                    </div>
+                    <div class="form-group">
+                        <label for="startDate">Data de Início</label>
+                        <input type="date" id="startDate" [(ngModel)]="user.startDate" />
+                    </div>
+                    <button class="save-btn" (click)="saveProfile()">💾 Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h3>{{ stats.totalCheckins }}</h3>
+                    <p>Check-ins Totais</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <h3>{{ stats.totalPoints }}</h3>
+                    <p>Pontos Totais</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <h3>{{ stats.currentStreak }}</h3>
+                    <p>Sequência Atual</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-content">
+                    <h3>{{ stats.longestStreak }}</h3>
+                    <p>Maior Sequência</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

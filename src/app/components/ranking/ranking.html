@@ -1,0 +1,132 @@
+<div class="ranking-container">
+    <div class="header">
+        <div class="back-section">
+            <button class="back-btn" (click)="goBack()">← Voltar</button>
+        </div>
+        <div class="title-section">
+            <h1>🏆 Ranking</h1>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn" (click)="navigateToProfile()">Perfil</button>
+            <button class="nav-btn logout" (click)="logout()">Sair</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Pódio dos Top 3 -->
+        <div class="podium" *ngIf="users.length >= 3">
+            <div class="podium-item second">
+                <div class="user-avatar">{{ users[1].name.charAt(0).toUpperCase() }}</div>
+                <div class="user-info">
+                    <h3>{{ users[1].name }}</h3>
+                    <p>{{ users[1].points }} pontos</p>
+                </div>
+                <div class="medal">🥈</div>
+                <div class="position">2º</div>
+            </div>
+
+            <div class="podium-item first">
+                <div class="user-avatar gold-avatar">{{ users[0].name.charAt(0).toUpperCase() }}</div>
+                <div class="user-info">
+                    <h3>{{ users[0].name }}</h3>
+                    <p>{{ users[0].points }} pontos</p>
+                </div>
+                <div class="medal">🥇</div>
+                <div class="position">1º</div>
+                <div class="crown">👑</div>
+            </div>
+
+            <div class="podium-item third">
+                <div class="user-avatar">{{ users[2].name.charAt(0).toUpperCase() }}</div>
+                <div class="user-info">
+                    <h3>{{ users[2].name }}</h3>
+                    <p>{{ users[2].points }} pontos</p>
+                </div>
+                <div class="medal">🥉</div>
+                <div class="position">3º</div>
+            </div>
+        </div>
+
+        <!-- Sua Posição (se não estiver no top 3) -->
+        <div class="current-user-card" *ngIf="currentUser && currentUser.position > 3">
+            <div class="card-header">
+                <h3>Sua Posição</h3>
+            </div>
+            <div class="user-row current-user">
+                <div class="rank">
+                    <span class="position-badge">{{ currentUser.position }}º</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar">{{ currentUser.name.charAt(0).toUpperCase() }}</div>
+                    <div class="user-details">
+                        <h4>{{ currentUser.name }} (Você)</h4>
+                        <p>{{ currentUser.email }}</p>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="value">{{ currentUser.points }}</span>
+                        <span class="label">pontos</span>
+                    </div>
+                    <div class="stat">
+                        <span class="value">{{ currentUser.checkins }}</span>
+                        <span class="label">check-ins</span>
+                    </div>
+                    <div class="stat">
+                        <span class="value">{{ currentUser.streak }}</span>
+                        <span class="label">sequência</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista Completa do Ranking -->
+        <div class="ranking-list">
+            <div class="card-header">
+                <h3>Ranking Completo</h3>
+            </div>
+
+            <div class="ranking-table">
+                <div class="user-row" *ngFor="let user of users; trackBy: trackByUser" [ngClass]="{
+            'current-user': isCurrentUser(user.email),
+            'top-3': user.position <= 3
+          }">
+
+                    <div class="rank">
+                        <span class="position-badge" [ngClass]="getPositionClass(user.position)">
+                            {{ getMedalIcon(user.position) }}
+                        </span>
+                    </div>
+
+                    <div class="user-info">
+                        <div class="user-avatar" [ngClass]="getPositionClass(user.position) + '-avatar'">
+                            {{ user.name.charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="user-details">
+                            <h4>
+                                {{ user.name }}
+                                <span *ngIf="isCurrentUser(user.email)" class="you-badge">(Você)</span>
+                            </h4>
+                            <p>{{ user.email }}</p>
+                        </div>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="value">{{ user.points }}</span>
+                            <span class="label">pontos</span>
+                        </div>
+                        <div class="stat">
+                            <span class="value">{{ user.checkins }}</span>
+                            <span class="label">check-ins</span>
+                        </div>
+                        <div class="stat">
+                            <span class="value">{{ user.streak }}</span>
+                            <span class="label">sequência</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

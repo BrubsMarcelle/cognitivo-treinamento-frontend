@@ -1,0 +1,655 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { delay, catchError, timeout, map } from 'rxjs/operators';
+import { API_CONFIG } from '../config/api.config';
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  password: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+}
+
+export interface ResetPasswordRequest {
+  username: string;
+  new_password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+  };
+}
+
+export interface CheckinRequest {
+  userId: number;
+  timestamp: string;
+}
+
+export interface CheckinResponse {
+  id: number;
+  userId: number;
+  timestamp: string;
+  points: number;
+}
+
+export interface CheckinStatusResponse {
+  can_checkin: boolean;
+  reason: string;
+  message: string;
+  today: string;
+  is_weekend: boolean;
+  already_checked_in: boolean;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  department: string;
+  position: string;
+  startDate: string;
+  totalPoints: number;
+  totalCheckins: number;
+  currentStreak: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class Api {
+  private baseUrl = API_CONFIG.BASE_URL;
+
+  constructor(private http: HttpClient) {
+    // Constructor cleaned up - no verbose logging
+  }
+
+  // Métodos de logging para debug
+  private logRequest(method: string, endpoint: string, data?: any): void {
+    if (!API_CONFIG.USE_MOCK_API) {
+      console.group(`🌐 API REQUEST - ${method.toUpperCase()}`);
+      console.log(`📍 URL: ${this.baseUrl}${endpoint}`);
+      console.log(`⚙️ Endpoint: ${endpoint}`);
+      if (data) {
+        console.log(`📝 Data:`, data);
+      }
+      console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+      console.groupEnd();
+    }
+  }
+
+  private logResponse(method: string, endpoint: string, response: any, duration?: number): void {
+    if (!API_CONFIG.USE_MOCK_API) {
+      console.group(`✅ API RESPONSE - ${method.toUpperCase()}`);
+      console.log(`📍 URL: ${this.baseUrl}${endpoint}`);
+      console.log(`📊 Response:`, response);
+      if (duration) {
+        console.log(`⏱️ Duration: ${duration}ms`);
+      }
+      console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+      console.groupEnd();
+    }
+  }
+
+  private logError(method: string, endpoint: string, error: any, duration?: number): void {
+    console.group(`❌ API ERROR - ${method.toUpperCase()}`);
+    console.log(`📍 URL: ${this.baseUrl}${endpoint}`);
+    console.error(`💥 Error:`, error);
+    console.log(`🔍 Status: ${error.status || 'Unknown'}`);
+    console.log(`📝 Message: ${error.message || 'No message'}`);
+    if (duration) {
+      console.log(`⏱️ Duration: ${duration}ms`);
+    }
+    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+    console.groupEnd();
+  }
+
+  // Métodos de API
+
+  login(credentials: LoginRequest): Observable<LoginResponse> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.AUTH.LOGIN;
+
+    this.logRequest('POST', endpoint, { username: credentials.username, password: '[PROTECTED]' });
+
+    if (API_CONFIG.USE_MOCK_API) {
+      console.log('🎭 Using MOCK API for login');
+      return this.mockLogin(credentials);
+    }
+
+    // Novo formato da API com JSON
+    const loginData = {
+      username: credentials.username,
+      password: credentials.password
+    };
+
+    return this.http.post<any>(`${this.baseUrl}${endpoint}`, loginData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('POST', endpoint, { ...response, access_token: '[PROTECTED]' }, duration);
+
+          // Transformar a resposta para o formato esperado pelo frontend
+          return {
+            token: response.access_token || response.token,
+            user: {
+              id: response.user?.id || 1,
+              email: credentials.username, // Username pode ser email
+              name: response.user?.name || credentials.username.split('@')[0]
+            }
+          };
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('POST', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  register(data: RegisterRequest): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.REGISTER}`, data)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        catchError(this.handleError)
+      );
+  }
+
+  createUser(data: CreateUserRequest): Observable<any> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.AUTH.REGISTER;
+
+    this.logRequest('POST', endpoint, { ...data, password: '[PROTECTED]' });
+
+    return this.http.post<any>(`${this.baseUrl}${endpoint}`, data)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('POST', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('POST', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  resetPassword(data: ResetPasswordRequest): Observable<any> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD;
+
+    this.logRequest('PUT', endpoint, { ...data, new_password: '[PROTECTED]' });
+
+    return this.http.put<any>(`${this.baseUrl}${endpoint}`, data)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('PUT', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('PUT', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  checkin(): Observable<CheckinResponse> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.CHECKIN.CREATE;
+
+    this.logRequest('POST', endpoint, {});
+
+    if (API_CONFIG.USE_MOCK_API) {
+      console.log('🎭 Using MOCK API for checkin');
+      return this.mockCheckin({
+        userId: 1,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // A API só precisa do token JWT, não de payload
+    return this.http.post<any>(`${this.baseUrl}${endpoint}`, {})
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('POST', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('POST', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  doCheckin(data: CheckinRequest): Observable<CheckinResponse> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.CHECKIN.CREATE;
+
+    this.logRequest('POST', endpoint, {});
+
+    if (API_CONFIG.USE_MOCK_API) {
+      console.log('🎭 Using MOCK API for checkin');
+      return this.mockCheckin(data);
+    }
+
+    // A API só precisa do token JWT, não de payload
+    return this.http.post<any>(`${this.baseUrl}${endpoint}`, {})
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('POST', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('POST', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  getCheckinStatus(): Observable<CheckinStatusResponse> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.CHECKIN.STATUS;
+
+    this.logRequest('GET', endpoint, {});
+
+    if (API_CONFIG.USE_MOCK_API) {
+      console.log('🎭 Using MOCK API for checkin status');
+      return this.mockGetCheckinStatus();
+    }
+
+    return this.http.get<any>(`${this.baseUrl}${endpoint}`)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('GET', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('GET', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  getCheckins(): Observable<CheckinResponse[]> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.CHECKIN.STATUS || '/checkin/status';
+
+    this.logRequest('GET', endpoint);
+
+    if (API_CONFIG.USE_MOCK_API) {
+      console.log('🎭 Using MOCK API for checkin status');
+      return this.mockGetCheckins();
+    }
+
+    return this.http.get<CheckinResponse[]>(`${this.baseUrl}${endpoint}`)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('GET', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('GET', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  getUserProfile(userId: number): Observable<User> {
+    if (API_CONFIG.USE_MOCK_API) {
+      return this.mockGetUserProfile(userId);
+    }
+
+    return this.http.get<User>(`${this.baseUrl}${API_CONFIG.ENDPOINTS.USER.PROFILE}/${userId}`)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        catchError(this.handleError)
+      );
+  }
+
+  getRanking(): Observable<User[]> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.USER.RANKING;
+
+    this.logRequest('GET', endpoint);
+
+    if (API_CONFIG.USE_MOCK_API) {
+      console.log('🎭 Using MOCK API for ranking');
+      return this.mockGetRanking();
+    }
+
+    return this.http.get<any>(`${this.baseUrl}${endpoint}`)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('GET', endpoint, response, duration);
+
+          // Verificar se há dados na resposta
+          if (!response) {
+            console.log('⚠️ Resposta vazia da API de ranking');
+            return [];
+          }
+
+          // Transformar a resposta para o formato esperado pelo frontend
+          if (response.ranking && Array.isArray(response.ranking)) {
+            const validRanking = response.ranking
+              .filter((entry: any) => {
+                // Filtrar apenas entradas válidas com dados consistentes
+                return entry &&
+                       entry.username &&
+                       typeof entry.username === 'string' &&
+                       entry.username.trim() !== '' &&
+                       typeof entry.points === 'number' &&
+                       entry.points >= 0;
+              })
+              .map((entry: any, index: number) => ({
+                id: index + 1,
+                name: entry.username.trim(),
+                email: `${entry.username}@empresa.com`, // Email fictício
+                department: 'N/A',
+                position: 'N/A',
+                startDate: '2024-01-01',
+                totalPoints: Math.max(0, entry.points), // Garantir que pontos não sejam negativos
+                totalCheckins: Math.max(0, Math.floor(entry.points / 10)), // Estimar checkins baseado nos pontos
+                currentStreak: 0
+              }))
+              .sort((a: any, b: any) => b.totalPoints - a.totalPoints); // Ordenar por pontos (decrescente)
+
+            console.log(`📊 Ranking processado: ${validRanking.length} usuários válidos encontrados`);
+            return validRanking;
+          }
+
+          // Se response.ranking não existir ou não é array, verificar outros formatos possíveis
+          if (Array.isArray(response)) {
+            const validRanking = response
+              .filter((entry: any) => {
+                return entry &&
+                       entry.name &&
+                       typeof entry.name === 'string' &&
+                       entry.name.trim() !== '' &&
+                       typeof entry.totalPoints === 'number' &&
+                       entry.totalPoints >= 0;
+              })
+              .sort((a, b) => b.totalPoints - a.totalPoints);
+
+            console.log(`📊 Ranking processado (formato alternativo): ${validRanking.length} usuários válidos encontrados`);
+            return validRanking;
+          }
+
+          console.log('⚠️ Formato de resposta não reconhecido para ranking');
+          return [];
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('GET', endpoint, error, duration);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  updateUserProfile(userId: number, profile: Partial<User>): Observable<User> {
+    if (API_CONFIG.USE_MOCK_API) {
+      return this.mockUpdateUserProfile(userId, profile);
+    }
+
+    return this.http.put<User>(`${this.baseUrl}${API_CONFIG.ENDPOINTS.USER.UPDATE_PROFILE}/${userId}`, profile)
+      .pipe(
+        timeout(API_CONFIG.TIMEOUT),
+        catchError(this.handleError)
+      );
+  }
+
+  // Método para verificar se a API está disponível
+  healthCheck(): Observable<any> {
+    const startTime = Date.now();
+    const endpoint = API_CONFIG.ENDPOINTS.HEALTH;
+
+    this.logRequest('GET', endpoint);
+
+    return this.http.get(`${this.baseUrl}${endpoint}`)
+      .pipe(
+        timeout(5000),
+        map((response: any) => {
+          const duration = Date.now() - startTime;
+          this.logResponse('GET', endpoint, response, duration);
+          return response;
+        }),
+        catchError((error) => {
+          const duration = Date.now() - startTime;
+          this.logError('GET', endpoint, error, duration);
+          console.log('🔴 Backend appears to be offline, falling back to offline mode');
+          return of({ status: 'offline' });
+        })
+      );
+  }
+
+  // Tratamento de erros
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    let errorMessage = 'Erro desconhecido';
+
+    if (error.error instanceof ErrorEvent) {
+      // Erro do lado do cliente
+      errorMessage = `Erro: ${error.error.message}`;
+    } else {
+      // Erro do lado do servidor
+      errorMessage = `Código do erro: ${error.status}, Mensagem: ${error.message}`;
+    }
+
+    console.error(errorMessage);
+    return throwError(() => errorMessage);
+  }
+
+  // Métodos mock para desenvolvimento
+  private mockLogin(credentials: LoginRequest): Observable<LoginResponse> {
+    const mockResponse: LoginResponse = {
+      token: 'mock-jwt-token-' + Date.now(),
+      user: {
+        id: 1,
+        email: credentials.username, // Username pode ser email
+        name: 'Usuário Teste'
+      }
+    };
+
+    return of(mockResponse).pipe(delay(1000));
+  }
+
+  private mockCheckin(data: CheckinRequest): Observable<CheckinResponse> {
+    // Verificar se já fez checkin hoje
+    const today = new Date().toDateString();
+    const userEmail = localStorage.getItem('userEmail') || '';
+    const checkinKey = `checkin_${userEmail}_${today}`;
+
+    // Verificar se já existe checkin para hoje
+    if (localStorage.getItem(checkinKey)) {
+      console.log('❌ Checkin já realizado hoje:', checkinKey);
+      return throwError(() => ({
+        error: 'Você já realizou o check-in hoje. Apenas um check-in por dia é permitido.',
+        status: 400
+      }));
+    }
+
+    // Marcar checkin como realizado para hoje
+    localStorage.setItem(checkinKey, JSON.stringify({
+      date: today,
+      timestamp: new Date().toISOString(),
+      userEmail: userEmail
+    }));
+
+    const mockResponse: CheckinResponse = {
+      id: Date.now(),
+      userId: data.userId,
+      timestamp: data.timestamp,
+      points: 10
+    };
+
+    console.log('✅ Checkin válido registrado:', checkinKey);
+    return of(mockResponse).pipe(delay(500));
+  }
+
+  private mockGetUserProfile(userId: number): Observable<User> {
+    const mockUser: User = {
+      id: userId,
+      name: 'Usuário Teste',
+      email: localStorage.getItem('userEmail') || '',
+      department: 'Tecnologia',
+      position: 'Desenvolvedor',
+      startDate: '2024-01-01',
+      totalPoints: parseInt(localStorage.getItem('userPoints') || '0'),
+      totalCheckins: JSON.parse(localStorage.getItem('checkins') || '[]').length,
+      currentStreak: 0
+    };
+
+    return of(mockUser).pipe(delay(500));
+  }
+
+  private mockGetCheckins(): Observable<CheckinResponse[]> {
+    const mockCheckins: CheckinResponse[] = [
+      {
+        id: 1,
+        userId: 1,
+        timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+        points: 10
+      },
+      {
+        id: 2,
+        userId: 1,
+        timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+        points: 10
+      },
+      {
+        id: 3,
+        userId: 1,
+        timestamp: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+        points: 10
+      }
+    ];
+
+    return of(mockCheckins).pipe(delay(800));
+  }
+
+  private mockGetRanking(): Observable<User[]> {
+    const mockRanking: User[] = [
+      {
+        id: 2,
+        name: 'Ana Silva',
+        email: 'ana.silva@empresa.com',
+        department: 'Vendas',
+        position: 'Gerente',
+        startDate: '2023-06-01',
+        totalPoints: 450,
+        totalCheckins: 45,
+        currentStreak: 12
+      },
+      {
+        id: 3,
+        name: 'Carlos Santos',
+        email: 'carlos.santos@empresa.com',
+        department: 'Marketing',
+        position: 'Analista',
+        startDate: '2023-08-15',
+        totalPoints: 380,
+        totalCheckins: 38,
+        currentStreak: 8
+      }
+    ];
+
+    return of(mockRanking).pipe(delay(800));
+  }
+
+  private mockUpdateUserProfile(userId: number, profile: Partial<User>): Observable<User> {
+    const updatedUser: User = {
+      id: userId,
+      name: profile.name || 'Usuário',
+      email: profile.email || '',
+      department: profile.department || '',
+      position: profile.position || '',
+      startDate: profile.startDate || '',
+      totalPoints: profile.totalPoints || 0,
+      totalCheckins: profile.totalCheckins || 0,
+      currentStreak: profile.currentStreak || 0
+    };
+
+    return of(updatedUser).pipe(delay(500));
+  }
+
+  private mockGetCheckinStatus(): Observable<CheckinStatusResponse> {
+    // Simular lógica de checkin baseada na data atual
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = domingo, 6 = sábado
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const todayString = today.toISOString().split('T')[0]; // formato YYYY-MM-DD
+
+    // Verificar se já fez checkin hoje (localStorage para mock)
+    const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+    const checkinKey = `checkin_${userEmail}_${today.toDateString()}`;
+    const alreadyCheckedIn = !!localStorage.getItem(checkinKey);
+
+    let response: CheckinStatusResponse;
+
+    if (isWeekend) {
+      response = {
+        can_checkin: false,
+        reason: "weekend",
+        message: "Check-ins são permitidos apenas de Segunda a Sexta",
+        today: todayString,
+        is_weekend: true,
+        already_checked_in: alreadyCheckedIn
+      };
+    } else if (alreadyCheckedIn) {
+      response = {
+        can_checkin: false,
+        reason: "already_checked_in",
+        message: "Você já realizou o check-in hoje",
+        today: todayString,
+        is_weekend: false,
+        already_checked_in: true
+      };
+    } else {
+      response = {
+        can_checkin: true,
+        reason: "",
+        message: "Check-in disponível",
+        today: todayString,
+        is_weekend: false,
+        already_checked_in: false
+      };
+    }
+
+    return of(response).pipe(delay(300));
+  }
+}

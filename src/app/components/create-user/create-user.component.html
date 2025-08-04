@@ -1,0 +1,42 @@
+<div class="login-container">
+  <div class="login-card">
+    <form class="login-form" (ngSubmit)="onCreateUser()">
+        <h2 class="form-title">Criar Conta</h2>
+        <p class="form-description">Preencha os dados abaixo para criar sua conta</p>
+
+        <div class="form-group">
+            <input type="text" name="username" [(ngModel)]="userData.username" placeholder="Nome de Usuário"
+                class="form-input" required />
+        </div>
+
+        <div class="form-group">
+            <input type="password" name="password" [(ngModel)]="userData.password" placeholder="Senha"
+                class="form-input" required />
+        </div>
+
+        <div class="form-group">
+            <input type="password" name="confirmPassword" [(ngModel)]="confirmPassword"
+                placeholder="Confirmar Senha" class="form-input" required />
+        </div>
+
+        <button type="submit" class="login-btn" [disabled]="isLoading">
+            <span *ngIf="isLoading">Criando conta...</span>
+            <span *ngIf="!isLoading">Criar Conta</span>
+        </button>
+
+        <div *ngIf="successMessage" class="success-message">
+            {{ successMessage }}
+        </div>
+
+        <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+
+        <div class="form-links">
+            <span (click)="goToLogin()" class="link">Já tem conta? Faça login</span>
+            <span (click)="goToResetPassword()" class="link">Esqueceu a senha?</span>
+        </div>
+    </form>
+  </div>
+</div>
+
