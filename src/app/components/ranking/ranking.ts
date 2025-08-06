@@ -29,7 +29,6 @@ export class Ranking implements OnInit {
   constructor(private router: Router, private api: Api) {}
 
   ngOnInit() {
-    // Verificar se está logado
     if (!localStorage.getItem('isLoggedIn')) {
       this.router.navigate(['/login']);
       return;
@@ -45,9 +44,6 @@ export class Ranking implements OnInit {
 
     this.api.getRanking().subscribe({
       next: (ranking: User[]) => {
-        console.log('📊 Dados do ranking recebidos:', ranking);
-
-        // Converter dados da API para o formato do componente
         this.users = ranking.map((user, index) => ({
           id: user.id,
           name: user.name,
@@ -58,18 +54,15 @@ export class Ranking implements OnInit {
           position: index + 1
         }));
 
-        // Encontrar o usuário atual no ranking
         this.currentUser = this.users.find(user => user.email === this.currentUserEmail) || null;
 
         this.isLoading = false;
-        console.log(`✅ Ranking carregado com ${this.users.length} usuários`);
       },
       error: (error) => {
         console.error('❌ Erro ao carregar ranking:', error);
         this.error = 'Erro ao carregar o ranking. Carregando dados de exemplo...';
         this.isLoading = false;
 
-        // Fallback para dados mock em caso de erro
         this.generateMockRanking();
       }
     });
@@ -88,7 +81,6 @@ export class Ranking implements OnInit {
       { name: 'Pedro Alves', email: 'pedro.alves@empresa.com', points: 150, checkins: 15, streak: 3 },
     ];
 
-    // Adicionar o usuário atual à lista
     const currentUserProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const currentUserPoints = parseInt(localStorage.getItem('userPoints') || '0');
     const currentUserCheckins = JSON.parse(localStorage.getItem('checkins') || '[]').length;
@@ -101,7 +93,6 @@ export class Ranking implements OnInit {
       streak: this.calculateCurrentUserStreak()
     };
 
-    // Verificar se o usuário já existe na lista mock (para evitar duplicatas)
     const existingUserIndex = mockUsers.findIndex(user => user.email === this.currentUserEmail);
     if (existingUserIndex === -1) {
       mockUsers.push(currentUserData);
@@ -109,7 +100,6 @@ export class Ranking implements OnInit {
       mockUsers[existingUserIndex] = currentUserData;
     }
 
-    // Ordenar por pontos (decrescente) e adicionar posições
     const sortedUsers = mockUsers
       .sort((a, b) => b.points - a.points)
       .map((user, index) => ({
@@ -126,7 +116,6 @@ export class Ranking implements OnInit {
     const checkins = JSON.parse(localStorage.getItem('checkins') || '[]');
     if (checkins.length === 0) return 0;
 
-    // Lógica simplificada para calcular streak
     const sortedCheckins = checkins.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     let streak = 0;
@@ -174,10 +163,6 @@ export class Ranking implements OnInit {
 
   goBack() {
     this.router.navigate(['/checkin']);
-  }
-
-  navigateToProfile() {
-    this.router.navigate(['/perfil']);
   }
 
   logout() {

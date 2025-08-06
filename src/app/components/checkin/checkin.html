@@ -2115,6 +2115,12 @@
     <!-- Podium Section -->
     <div class="podium-section">
       <div class="podium-container">
+        <!-- Loading indicator no pódio -->
+        <div class="podium-no-data" *ngIf="isLoadingRanking">
+          <div class="no-data-icon">🔄</div>
+          <div class="no-data-text">Atualizando pódio...</div>
+        </div>
+
         <!-- Mensagem quando não há dados no pódium -->
         <div class="podium-no-data" *ngIf="!isLoadingRanking && (!weeklyRanking || weeklyRanking.length === 0)">
           <div class="no-data-icon">🏆</div>
@@ -2122,7 +2128,7 @@
         </div>
 
         <!-- 2nd Place -->
-        <div class="podium-item second-place" *ngIf="weeklyRanking && weeklyRanking.length >= 2">
+        <div class="podium-item second-place" *ngIf="!isLoadingRanking && weeklyRanking && weeklyRanking.length >= 2">
           <div class="user-name">{{ weeklyRanking[1].name }}</div>
           <div class="user-card green">
             <div class="medal">2</div>
@@ -2131,7 +2137,7 @@
         </div>
 
         <!-- 1st Place -->
-        <div class="podium-item first-place" *ngIf="weeklyRanking && weeklyRanking.length >= 1">
+        <div class="podium-item first-place" *ngIf="!isLoadingRanking && weeklyRanking && weeklyRanking.length >= 1">
           <div class="user-name">{{ weeklyRanking[0].name }}</div>
           <div class="user-card blue">
             <div class="medal gold">1</div>
@@ -2140,7 +2146,7 @@
         </div>
 
         <!-- 3rd Place -->
-        <div class="podium-item third-place" *ngIf="weeklyRanking && weeklyRanking.length >= 3">
+        <div class="podium-item third-place" *ngIf="!isLoadingRanking && weeklyRanking && weeklyRanking.length >= 3">
           <div class="user-name">{{ weeklyRanking[2].name }}</div>
           <div class="user-card pink">
             <div class="medal">3</div>
@@ -2200,13 +2206,13 @@
           </div>
           <div class="table-rows">
             <!-- Mensagem quando não há dados -->
-            <div class="no-data-message" *ngIf="!isLoadingRanking && (!weeklyRanking || weeklyRanking.length === 0)">
+            <div class="no-data-message" *ngIf="!isLoadingRanking && (!fullRanking || fullRanking.length === 0)">
               <div class="no-data-icon">📊</div>
               <div class="no-data-text">Nenhum checkin realizado na semana</div>
             </div>
 
-            <!-- Dados do ranking -->
-            <div class="table-row" *ngFor="let user of weeklyRanking; let i = index">
+            <!-- Dados do ranking completo -->
+            <div class="table-row" *ngFor="let user of fullRanking; let i = index; trackBy: trackByUserId">
               <div class="cell">{{ i + 1 }}</div>
               <div class="cell">{{ user.name }}</div>
               <div class="cell">{{ user.totalPoints }}</div>

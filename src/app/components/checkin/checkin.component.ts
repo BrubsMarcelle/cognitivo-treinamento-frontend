@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { interval, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -35,19 +35,19 @@ export class CheckinComponent implements OnInit, OnDestroy {
   checkins: any[] = [];
 
   // Ranking properties
-  weeklyRanking: User[] = [];
+  weeklyRanking: User[] = []; // Para o pódio (3 primeiros)
+  fullRanking: User[] = []; // Para a tabela (todos os usuários)
   isLoadingRanking: boolean = false;
 
   constructor(
     private api: Api,
     private authService: AuthService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    // Verificar se o usuário está autenticado
     const isAuth = this.authService.isAuthenticated();
-    console.log('🔄 AuthService.isAuthenticated():', isAuth);
 
     if (!isAuth) {
       console.log('❌ Usuário não autenticado, redirecionando para login');
@@ -134,10 +134,18 @@ export class CheckinComponent implements OnInit, OnDestroy {
   private loadCheckinHistory(): void {
     this.api.getCheckins().subscribe({
       next: (checkins) => {
-        this.checkins = checkins;
+
+        // Verificação de segurança - garantir que seja um array
+        if (Array.isArray(checkins)) {
+          this.checkins = checkins;
+        } else {
+          console.log('⚠️ ERRO DEBUG - Checkins não é array, mantendo array vazio');
+          this.checkins = [];
+        }
       },
       error: (error) => {
         console.error('❌ Erro ao carregar histórico:', error);
+        this.checkins = [];
       }
     });
   }
@@ -147,14 +155,21 @@ export class CheckinComponent implements OnInit, OnDestroy {
 
     this.api.getRanking().subscribe({
       next: (ranking: User[]) => {
-        console.log('📊 Ranking carregado:', ranking);
+
         this.weeklyRanking = ranking.slice(0, 3);
+
+        this.fullRanking = ranking;
+
         this.isLoadingRanking = false;
+
+        this.cdr.detectChanges();
       },
       error: (error: any) => {
-        console.error('❌ Erro ao carregar ranking no checkin:', error);
+        console.error('❌ TESTE DEBUG - Erro ao carregar ranking:', error);
         this.weeklyRanking = [];
+        this.fullRanking = [];
         this.isLoadingRanking = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -189,28 +204,51 @@ export class CheckinComponent implements OnInit, OnDestroy {
   private handleCheckinSuccess(response: any): void {
     this.checkinSuccess = true;
     this.canCheckIn = false;
-    this.lastCheckin = new Date(response.timestamp);
+
+    // Verificar se o timestamp é válido
+    let validTimestamp: Date;
+    if (response.timestamp) {
+      try {
+        validTimestamp = new Date(response.timestamp);
+        if (isNaN(validTimestamp.getTime())) {
+          throw new Error('Invalid timestamp');
+        }
+      } catch (error) {
+        console.log('⚠️ ERRO DEBUG - Timestamp inválido, usando data atual:', response.timestamp);
+        validTimestamp = new Date();
+      }
+    } else {
+      validTimestamp = new Date();
+    }
+
+    this.lastCheckin = validTimestamp;
     this.checkinMessage = `${APP_CONSTANTS.MESSAGES.CONGRATULATIONS} (${DateUtils.formatDate(new Date())})`;
 
-    // Add to checkins list
+    // Add to checkins list (com verificação de segurança)
+    if (!Array.isArray(this.checkins)) {
+      console.log('⚠️ ERRO DEBUG - checkins não é array, reinicializando:', typeof this.checkins);
+      this.checkins = [];
+    }
     this.checkins.unshift(response);
 
     // Save to localStorage as backup
     const today = DateUtils.getToday();
     this.storageService.setItem(`checkin_${DateUtils.formatDate(today)}`, JSON.stringify({
-      timestamp: this.lastCheckin.toISOString(),
+      timestamp: validTimestamp.toISOString(),
       userId: 1,
       points: response.points || 10
     }));
 
-    // Reset success message after delay
+    setTimeout(() => {
+      this.loadRanking();
+    }, 1000);
+
     setTimeout(() => {
       this.checkinSuccess = false;
     }, 3000);
   }
 
   private handleCheckinError(error: any): void {
-    // Try fallback checkin to localStorage
     const now = new Date();
     const today = DateUtils.getToday();
 
@@ -252,7 +290,6 @@ export class CheckinComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
-  // Template helper methods
   get formattedTime(): string {
     return DateUtils.formatTime(this.currentTime);
   }
@@ -291,5 +328,9 @@ export class CheckinComponent implements OnInit, OnDestroy {
     if (this.isWeekend) return 'weekend';
     if (!this.canCheckIn) return 'completed';
     return 'pending';
+  }
+
+  trackByUserId(index: number, user: User): any {
+    return user.id || user.name || index;
   }
 }

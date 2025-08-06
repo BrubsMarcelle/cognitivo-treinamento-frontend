@@ -4,9 +4,16 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "serve": "ng serve --host 0.0.0.0",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "docker:build": "docker build -t cognitivo-frontend:prod .",
+    "docker:build:dev": "docker build -f Dockerfile.dev -t cognitivo-frontend:dev .",
+    "docker:run": "docker run -d -p 80:80 --name cognitivo-frontend-prod cognitivo-frontend:prod",
+    "docker:run:dev": "docker run -d -p 4200:4200 --name cognitivo-frontend-dev cognitivo-frontend:dev",
+    "e2e": "ng e2e"
   },
   "prettier": {
     "overrides": [
@@ -34,6 +41,7 @@
     "@angular/build": "^20.1.1",
     "@angular/cli": "^20.1.1",
     "@angular/compiler-cli": "^20.1.0",
+    "@puppeteer/ng-schematics": "^0.7.0",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
@@ -41,6 +49,8 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.8.2"
+    "puppeteer": "^24.15.0",
+    "typescript": "~5.8.2",
+    "jasmine": "5.9.0"
   }
 }

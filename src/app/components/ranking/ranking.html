@@ -7,13 +7,11 @@
             <h1>🏆 Ranking</h1>
         </div>
         <div class="nav-buttons">
-            <button class="nav-btn" (click)="navigateToProfile()">Perfil</button>
             <button class="nav-btn logout" (click)="logout()">Sair</button>
         </div>
     </div>
 
     <div class="main-content">
-        <!-- Pódio dos Top 3 -->
         <div class="podium" *ngIf="users.length >= 3">
             <div class="podium-item second">
                 <div class="user-avatar">{{ users[1].name.charAt(0).toUpperCase() }}</div>
@@ -47,7 +45,6 @@
             </div>
         </div>
 
-        <!-- Sua Posição (se não estiver no top 3) -->
         <div class="current-user-card" *ngIf="currentUser && currentUser.position > 3">
             <div class="card-header">
                 <h3>Sua Posição</h3>
@@ -79,8 +76,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Lista Completa do Ranking -->
         <div class="ranking-list">
             <div class="card-header">
                 <h3>Ranking Completo</h3>

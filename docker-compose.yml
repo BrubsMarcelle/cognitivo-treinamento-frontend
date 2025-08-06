@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Aplicação Frontend (Produção)
+  cognitivo-frontend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Frontend-Treinamento-Cognitivo-Prod
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - cognitivo-network
+
+  # Aplicação Frontend (Desenvolvimento)
+  cognitivo-frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: Frontend-Treinamento-Cognitivo
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+    networks:
+      - cognitivo-network
+    profiles:
+      - dev
+networks:
+  cognitivo-network:
+    driver: bridge
+
+volumes:
+  node_modules:

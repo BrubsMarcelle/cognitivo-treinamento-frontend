@@ -94,6 +94,18 @@
               "src/styles.scss"
             ]
           }
+        },
+        "e2e": {
+          "builder": "@puppeteer/ng-schematics:puppeteer",
+          "options": {
+            "devServerTarget": "cognitivo-treinamento-frontend:serve",
+            "testRunner": "jasmine"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "cognitivo-treinamento-frontend:serve:production"
+            }
+          }
         }
       }
     }

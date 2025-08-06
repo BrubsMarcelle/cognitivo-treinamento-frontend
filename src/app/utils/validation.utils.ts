@@ -1,6 +1,7 @@
 export class ValidationUtils {
 
   static isValidEmail(email: string): boolean {
+    if (!email) return false;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }
@@ -12,6 +13,7 @@ export class ValidationUtils {
 
   static isValidUsername(username: string): boolean {
     // Minimum 3 characters, alphanumeric and underscore only
+    if (!username) return false;
     const usernameRegex = /^[a-zA-Z0-9_]{3,}$/;
     return usernameRegex.test(username);
   }

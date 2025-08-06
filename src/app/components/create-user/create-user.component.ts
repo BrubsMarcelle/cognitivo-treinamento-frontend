@@ -28,42 +28,25 @@ export class CreateUserComponent {
   constructor(private apiService: Api, private router: Router) {}
 
   onCreateUser(): void {
-    console.log('🚀 Botão de criar usuário clicado!');
     this.onSubmit();
   }
 
   onSubmit(): void {
-    console.log('🔄 Iniciando processo de criação de usuário...');
-    console.log('📝 Dados do usuário:', {
-      username: this.userData.username,
-      email: this.userData.email,
-      nome: this.userData.nome,
-      password: this.userData.password ? '***' : 'vazio'
-    });
 
     if (this.isValidForm()) {
-      console.log('✅ Formulário válido, enviando requisição...');
       this.isLoading = true;
       this.errorMessage = '';
       this.successMessage = '';
 
-      // Criar objeto apenas com os campos necessários para a API
       const createUserPayload = {
         username: this.userData.username,
         password: this.userData.password
       };
 
-      console.log('📤 Payload enviado para API:', {
-        username: createUserPayload.username,
-        password: '***'
-      });
-
       this.apiService.createUser(createUserPayload).subscribe({
         next: (response: any) => {
-          console.log('✅ Usuário criado com sucesso!', response);
           this.isLoading = false;
           this.successMessage = 'Usuário criado com sucesso! Redirecionando...';
-          console.log('🔄 Redirecionando para login em 2 segundos...');
           setTimeout(() => {
             this.router.navigate(['/login']);
           }, 2000);
@@ -88,19 +71,13 @@ export class CreateUserComponent {
   }
 
   private isValidForm(): boolean {
-    console.log('🔍 Validando formulário...');
 
     if (!this.userData.username || !this.userData.password) {
-      console.log('❌ Campos obrigatórios não preenchidos:', {
-        username: !!this.userData.username,
-        password: !!this.userData.password
-      });
       this.errorMessage = 'Por favor, preencha nome de usuário e senha';
       return false;
     }
 
     if (this.userData.password !== this.confirmPassword) {
-      console.log('❌ Senhas não coincidem');
       this.errorMessage = 'As senhas não coincidem';
       return false;
     }

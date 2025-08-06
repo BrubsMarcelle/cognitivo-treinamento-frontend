@@ -23,7 +23,6 @@ export const APP_CONSTANTS = {
     LOGIN: '/login',
     CHECKIN: '/checkin',
     RANKING: '/ranking',
-    PROFILE: '/perfil',
     CREATE_USER: '/create-user',
     RESET_PASSWORD: '/reset-password'
   }

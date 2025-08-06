@@ -23,7 +23,7 @@ export const API_CONFIG = {
       CREATE: '/checkin/', // POST - Create checkin (requer autenticação)
       STATUS: '/checkin/status' // GET - Check if user can checkin today
     },
-    HEALTH: '/' // GET - Read root (health check)
+    HEALTH: '/healthcheck' // GET - Read root (health check)
   },
 
   // Configurações de timeout

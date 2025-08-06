@@ -80,12 +80,7 @@ export class Api {
   private logRequest(method: string, endpoint: string, data?: any): void {
     if (!API_CONFIG.USE_MOCK_API) {
       console.group(`🌐 API REQUEST - ${method.toUpperCase()}`);
-      console.log(`📍 URL: ${this.baseUrl}${endpoint}`);
       console.log(`⚙️ Endpoint: ${endpoint}`);
-      if (data) {
-        console.log(`📝 Data:`, data);
-      }
-      console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
       console.groupEnd();
     }
   }
@@ -93,26 +88,16 @@ export class Api {
   private logResponse(method: string, endpoint: string, response: any, duration?: number): void {
     if (!API_CONFIG.USE_MOCK_API) {
       console.group(`✅ API RESPONSE - ${method.toUpperCase()}`);
-      console.log(`📍 URL: ${this.baseUrl}${endpoint}`);
       console.log(`📊 Response:`, response);
-      if (duration) {
-        console.log(`⏱️ Duration: ${duration}ms`);
-      }
-      console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
       console.groupEnd();
     }
   }
 
   private logError(method: string, endpoint: string, error: any, duration?: number): void {
     console.group(`❌ API ERROR - ${method.toUpperCase()}`);
-    console.log(`📍 URL: ${this.baseUrl}${endpoint}`);
     console.error(`💥 Error:`, error);
     console.log(`🔍 Status: ${error.status || 'Unknown'}`);
     console.log(`📝 Message: ${error.message || 'No message'}`);
-    if (duration) {
-      console.log(`⏱️ Duration: ${duration}ms`);
-    }
-    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
     console.groupEnd();
   }
 
@@ -358,18 +343,13 @@ export class Api {
         map((response: any) => {
           const duration = Date.now() - startTime;
           this.logResponse('GET', endpoint, response, duration);
-
-          // Verificar se há dados na resposta
           if (!response) {
-            console.log('⚠️ Resposta vazia da API de ranking');
             return [];
           }
 
-          // Transformar a resposta para o formato esperado pelo frontend
           if (response.ranking && Array.isArray(response.ranking)) {
             const validRanking = response.ranking
               .filter((entry: any) => {
-                // Filtrar apenas entradas válidas com dados consistentes
                 return entry &&
                        entry.username &&
                        typeof entry.username === 'string' &&
@@ -380,21 +360,18 @@ export class Api {
               .map((entry: any, index: number) => ({
                 id: index + 1,
                 name: entry.username.trim(),
-                email: `${entry.username}@empresa.com`, // Email fictício
+                email: `${entry.username}@empresa.com`,
                 department: 'N/A',
                 position: 'N/A',
                 startDate: '2024-01-01',
-                totalPoints: Math.max(0, entry.points), // Garantir que pontos não sejam negativos
-                totalCheckins: Math.max(0, Math.floor(entry.points / 10)), // Estimar checkins baseado nos pontos
+                totalPoints: Math.max(0, entry.points),
+                totalCheckins: Math.max(0, Math.floor(entry.points / 10)),
                 currentStreak: 0
               }))
-              .sort((a: any, b: any) => b.totalPoints - a.totalPoints); // Ordenar por pontos (decrescente)
-
-            console.log(`📊 Ranking processado: ${validRanking.length} usuários válidos encontrados`);
+              .sort((a: any, b: any) => b.totalPoints - a.totalPoints);
             return validRanking;
           }
 
-          // Se response.ranking não existir ou não é array, verificar outros formatos possíveis
           if (Array.isArray(response)) {
             const validRanking = response
               .filter((entry: any) => {
@@ -406,8 +383,6 @@ export class Api {
                        entry.totalPoints >= 0;
               })
               .sort((a, b) => b.totalPoints - a.totalPoints);
-
-            console.log(`📊 Ranking processado (formato alternativo): ${validRanking.length} usuários válidos encontrados`);
             return validRanking;
           }
 
@@ -452,7 +427,7 @@ export class Api {
         catchError((error) => {
           const duration = Date.now() - startTime;
           this.logError('GET', endpoint, error, duration);
-          console.log('🔴 Backend appears to be offline, falling back to offline mode');
+            console.log('🔴 O backend parece estar offline, entrando em modo offline');
           return of({ status: 'offline' });
         })
       );
@@ -480,7 +455,7 @@ export class Api {
       token: 'mock-jwt-token-' + Date.now(),
       user: {
         id: 1,
-        email: credentials.username, // Username pode ser email
+        email: credentials.username,
         name: 'Usuário Teste'
       }
     };
@@ -489,12 +464,10 @@ export class Api {
   }
 
   private mockCheckin(data: CheckinRequest): Observable<CheckinResponse> {
-    // Verificar se já fez checkin hoje
     const today = new Date().toDateString();
     const userEmail = localStorage.getItem('userEmail') || '';
     const checkinKey = `checkin_${userEmail}_${today}`;
 
-    // Verificar se já existe checkin para hoje
     if (localStorage.getItem(checkinKey)) {
       console.log('❌ Checkin já realizado hoje:', checkinKey);
       return throwError(() => ({
@@ -502,8 +475,6 @@ export class Api {
         status: 400
       }));
     }
-
-    // Marcar checkin como realizado para hoje
     localStorage.setItem(checkinKey, JSON.stringify({
       date: today,
       timestamp: new Date().toISOString(),
@@ -608,13 +579,11 @@ export class Api {
   }
 
   private mockGetCheckinStatus(): Observable<CheckinStatusResponse> {
-    // Simular lógica de checkin baseada na data atual
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = domingo, 6 = sábado
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const todayString = today.toISOString().split('T')[0]; // formato YYYY-MM-DD
+    const todayString = today.toISOString().split('T')[0];
 
-    // Verificar se já fez checkin hoje (localStorage para mock)
     const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
     const checkinKey = `checkin_${userEmail}_${today.toDateString()}`;
     const alreadyCheckedIn = !!localStorage.getItem(checkinKey);
